@@ -1,62 +1,107 @@
 package engine;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.validation.Valid;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 public class QuizController {
+    @Autowired
+    QuizRepository quizRepository;
 
-    ArrayList<Quiz> quizzes = new ArrayList<>();
-
+    @Autowired
+    PasswordEncoder passwordEncoder;
+    @Autowired
+    UserRepository userRepository;
     public QuizController() {
 
     }
+    @PostMapping(path="/api/register", consumes = "application/json")
+    @ResponseStatus(code = HttpStatus.CREATED)
+    public void register(@RequestBody @Valid User newUser) {
+        User user = new User();
+        user.setUsername(newUser.getUsername());
+        user.setPassword(passwordEncoder.encode(newUser.getPassword()));
+        try {
+                userRepository.save(user);
+        } catch(DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "username already taken"
+            );
+        }
+    }
 
     @PostMapping(path="/api/quizzes", consumes = "application/json")
-    public Quiz addNewQuiz(@RequestBody Quiz newQuiz) {
-        // id must be unique, even if quizzes are removed
-        if (quizzes.size() > 0) {
-            newQuiz.setId(quizzes.get(quizzes.size() - 1).getId() + 1);
-        } else {
-            newQuiz.setId(1);
-        }
-        quizzes.add(newQuiz);
+    public Quiz addNewQuiz(@Valid @RequestBody Quiz newQuiz) {
+        quizRepository.save(newQuiz);
         return newQuiz;
     }
 
-    @PostMapping(path = "/api/quizzes/{id}/solve", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public Answer getAnswer(@PathVariable int id, int answer){
-        var quiz = quizzes.stream().filter(q -> q.getId() == id).findAny().orElse(null);
-        if (quiz == null) {
+    @PostMapping(path = "/api/quizzes/{id}/solve", consumes = "application/json")
+    public Assessment getAnswer(@PathVariable int id, @RequestBody Answer answer){
+        var quiz = quizRepository.findById(id);
+        if (quiz.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND, "entity not found"
             );
         }
-        if (answer == quiz.getAnswer()) {
-            return new Answer(true);
+        Arrays.sort(answer.getAnswer());
+        if (isCorrect(answer.getAnswer(), quiz.get())) {
+            return new Assessment(true);
         } else {
-            return new Answer(false);
+            return new Assessment(false);
         }
+    }
+
+    private boolean isCorrect(int[] answer, Quiz quiz) {
+        if (quiz.getAnswer() == null) {
+            return answer.length == 0;
+        }
+        if (quiz.getAnswer().length != answer.length) {
+            return false;
+        }
+        int[] correctAnswer = quiz.getAnswer();
+        for (int i = 0; i < answer.length; i++) {
+            if (correctAnswer[i] != answer[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @GetMapping(path = "/api/quizzes/{id}")
     public ResponseEntity<Quiz> getQuiz(@PathVariable int id){
-        var quiz = quizzes.stream().filter(q -> q.getId() == id).findAny().orElse(null);
-        if (quiz == null) {
+        var quiz = quizRepository.findById(id);
+        if (quiz.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND, "entity not found"
             );
         }
-        return ResponseEntity.ok(quiz);
+        return ResponseEntity.ok(quiz.get());
     }
 
     @GetMapping(path = "/api/quizzes")
-    public ArrayList<Quiz> getAllQuizzes() {
-        return quizzes;
+    public List<Quiz> getAllQuizzes() {
+        return (List<Quiz>) quizRepository.findAll();
     }
+
+/*    @PostMapping(path="/api/register", consumes = "application/json")
+    public ResponseEntity register(@Valid @RequestBody User user) {
+        if (checkCredentials(user)) {
+
+        } else {
+            return R
+        }
+    }*/
 }

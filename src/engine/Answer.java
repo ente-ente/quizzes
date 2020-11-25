@@ -1,24 +1,15 @@
 package engine;
 
+import java.util.ArrayList;
+
 public class Answer {
-    private boolean success;
-    private String feedback;
+    int[] answer;
 
-    public Answer(boolean isRight) {
-        if (isRight) {
-            success = true;
-            feedback = "Congratulations, you're right!";
-        } else {
-            success = false;
-            feedback = "Wrong answer! Please, try again.";
-        }
+    public int[] getAnswer() {
+        return answer== null ? new int[]{} : answer;
     }
 
-    public String getFeedback() {
-        return feedback;
-    }
-
-    public boolean getSuccess() {
-        return success;
+    public void setAnswer(int[] answer) {
+        this.answer = answer;
     }
 }
