@@ -1,5 +1,6 @@
 package engine;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -7,7 +8,9 @@ import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 @Entity
 public class User implements UserDetails {
@@ -16,9 +19,13 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Quiz> quizzes = new ArrayList<>();
+
     @Column(nullable = false, unique = true)
     @Email
     @Pattern(regexp=".+@.+\\..+", message="Please provide a valid email address")
+    @JsonProperty("email")
     private String username;
 
     @Size(min = 5)

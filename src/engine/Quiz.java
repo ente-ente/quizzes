@@ -1,11 +1,9 @@
 package engine;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -15,6 +13,7 @@ import java.util.Arrays;
 public class Quiz {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     @Id
+    @Column(name="QuizID")
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
     @NotBlank
@@ -26,8 +25,20 @@ public class Quiz {
     private String[] options;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private int[] answer;
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "UserID")
+    private User user;
 
     public Quiz() {
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public String[] getOptions() {

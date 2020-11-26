@@ -1,19 +1,18 @@
 package engine;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
+import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class QuizController {
@@ -28,22 +27,27 @@ public class QuizController {
 
     }
     @PostMapping(path="/api/register", consumes = "application/json")
-    @ResponseStatus(code = HttpStatus.CREATED)
+    @ResponseStatus(code = HttpStatus.OK)
     public void register(@RequestBody @Valid User newUser) {
         User user = new User();
+
         user.setUsername(newUser.getUsername());
+        System.out.println(newUser.getPassword());
         user.setPassword(passwordEncoder.encode(newUser.getPassword()));
         try {
                 userRepository.save(user);
         } catch(DataIntegrityViolationException e) {
             throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, "username already taken"
+                    HttpStatus.BAD_REQUEST, e.getMessage()
             );
         }
     }
 
     @PostMapping(path="/api/quizzes", consumes = "application/json")
-    public Quiz addNewQuiz(@Valid @RequestBody Quiz newQuiz) {
+    public Quiz addNewQuiz(@Valid @RequestBody Quiz newQuiz, Principal principal) {
+        System.out.println(principal.getName());
+        newQuiz.setUser(userRepository.findByUsername(principal.getName()));
+        System.out.println(newQuiz.getUser().getId());
         quizRepository.save(newQuiz);
         return newQuiz;
     }
@@ -94,6 +98,19 @@ public class QuizController {
     @GetMapping(path = "/api/quizzes")
     public List<Quiz> getAllQuizzes() {
         return (List<Quiz>) quizRepository.findAll();
+    }
+
+    @DeleteMapping(value = "/api/quizzes/{id}")
+    public ResponseEntity<Integer> deletePost(@PathVariable int id, Principal principal) {
+        Optional<Quiz> toDelete = quizRepository.findById(id);
+        if (toDelete.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        if (toDelete.get().getUser().getUsername() != principal.getName()) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        quizRepository.deleteById(id);
+        return new ResponseEntity<>(id, HttpStatus.NO_CONTENT);
     }
 
 /*    @PostMapping(path="/api/register", consumes = "application/json")
