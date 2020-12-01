@@ -17,10 +17,14 @@ public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name="UserID")
     private int id;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Quiz> quizzes = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<QuizCompletion> completions = new ArrayList<QuizCompletion>();
 
     @Column(nullable = false, unique = true)
     @Email

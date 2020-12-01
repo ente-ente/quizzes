@@ -7,7 +7,9 @@ import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 @Entity
 public class Quiz {
@@ -29,6 +31,9 @@ public class Quiz {
     @ManyToOne
     @JoinColumn(name = "UserID")
     private User user;
+
+    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL)
+    private final List<QuizCompletion> quizCompletions = new ArrayList<>();
 
     public Quiz() {
     }
